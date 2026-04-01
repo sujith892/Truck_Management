@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>LogiTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060d14;--surface:#0d1b26;--card:#112233;--border:#1a3a5c;
+  --accent:#00d4ff;--accent2:#ff6b35;--green:#00ff88;--yellow:#ffd60a;--red:#ff4757;
+  --text:#e0f0ff;--muted:#4a7a9b;
+  --font:'Rajdhani',sans-serif;--mono:'JetBrains Mono',monospace;
+  --radius:12px;--safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+/* GRID BG */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;
+}
+
+#app{
+  display:flex;flex-direction:column;height:100dvh;
+  max-width:430px;margin:0 auto;position:relative;overflow:hidden;
+  z-index:1;box-shadow:0 0 60px rgba(0,212,255,0.08);
+}
+
+/* ── LOGIN ── */
+#loginScreen{
+  position:absolute;inset:0;z-index:999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px calc(32px + var(--safe-bot));
+}
+#loginScreen.hidden{display:none;}
+
+.login-glow{
+  width:80px;height:80px;
+  background:linear-gradient(135deg,#0d1b26,#112233);
+  border:2px solid var(--accent);border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;margin-bottom:20px;
+  box-shadow:0 0 30px rgba(0,212,255,0.3),inset 0 0 20px rgba(0,212,255,0.05);
+  animation:glowPulse 2s ease-in-out infinite;
+}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 30px rgba(0,212,255,0.3)}50%{box-shadow:0 0 50px rgba(0,212,255,0.6)}}
+
+.login-title{font-size:32px;font-weight:700;letter-spacing:3px;color:var(--accent);text-align:center;text-transform:uppercase;}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:32px;letter-spacing:2px;text-transform:uppercase;text-align:center;}
+
+.login-card{
+  width:100%;background:var(--card);
+  border:1px solid var(--border);border-radius:16px;padding:24px;
+  box-shadow:0 0 40px rgba(0,212,255,0.05);
+}
+.lfield{margin-bottom:16px;}
+.lfield label{display:block;font-size:11px;font-weight:600;color:var(--accent);margin-bottom:6px;letter-spacing:2px;text-transform:uppercase;}
+.lfield input{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:13px 16px;color:var(--text);
+  font-family:var(--mono);font-size:14px;outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+.lfield input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,0.15);}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:48px;}
+.pw-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;}
+
+.login-btn{
+  width:100%;padding:15px;border:none;border-radius:10px;
+  background:linear-gradient(135deg,#0066cc,var(--accent));
+  color:#fff;font-family:var(--font);font-size:17px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;letter-spacing:2px;text-transform:uppercase;
+  box-shadow:0 4px 20px rgba(0,212,255,0.3);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.login-btn:active{transform:scale(0.97);}
+
+.login-err{
+  background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.3);
+  border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);
+  text-align:center;margin-top:12px;display:none;
+}
+.login-err.show{display:block;animation:shake 0.4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+
+/* ── STATUS BAR ── */
+.status-bar{
+  height:calc(40px + var(--safe-top));padding-top:var(--safe-top);
+  background:var(--surface);display:flex;align-items:flex-end;justify-content:space-between;
+  padding-left:16px;padding-right:16px;padding-bottom:8px;
+  font-size:11px;font-weight:600;color:var(--muted);flex-shrink:0;
+  border-bottom:1px solid var(--border);letter-spacing:1px;
+}
+.status-bar .clk{color:var(--accent);font-family:var(--mono);}
+
+/* ── HEADER ── */
+.header{
+  background:var(--surface);padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;border-bottom:1px solid var(--border);
+}
+.header-brand{display:flex;align-items:center;gap:10px;}
+.brand-icon{
+  width:32px;height:32px;background:linear-gradient(135deg,#0066cc,var(--accent));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 0 12px rgba(0,212,255,0.3);
+}
+.brand-name{font-size:18px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;}
+.brand-sub{font-size:10px;color:var(--muted);letter-spacing:1px;}
+
+.header-right{display:flex;align-items:center;gap:8px;}
+.hbtn{
+  height:32px;background:var(--card);border:1px solid var(--border);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:14px;transition:all 0.2s;color:var(--text);padding:0 10px;gap:5px;
+}
+.hbtn:active{transform:scale(0.93);background:var(--border);}
+.user-pill{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);
+  border-radius:20px;padding:4px 10px 4px 4px;cursor:pointer;transition:all 0.2s;
+}
+.user-pill:active{background:rgba(0,212,255,0.15);}
+.uavatar{
+  width:24px;height:24px;border-radius:50%;
+  background:linear-gradient(135deg,#0066cc,var(--accent));
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;
+}
+.uname{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:0.5px;}
+
+/* ── TABS ── */
+.tab-bar{
+  display:flex;background:var(--surface);padding:4px 8px;gap:2px;
+  flex-shrink:0;border-bottom:1px solid var(--border);
+}
+.tab{
+  flex:1;padding:7px 2px;border:none;background:transparent;
+  color:var(--muted);font-family:var(--font);font-size:11px;font-weight:600;
+  cursor:pointer;border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  transition:all 0.2s;letter-spacing:0.5px;text-transform:uppercase;
+}
+.tab .ti{font-size:17px;}
+.tab.active{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
+.tab:active{transform:scale(0.95);}
+.tab.admin-tab{display:none;}
+.tab.admin-tab.show{display:flex;}
+
+/* ── SCREENS ── */
+.screens{flex:1;overflow:hidden;position:relative;}
+.screen{
+  position:absolute;inset:0;overflow-y:auto;
+  padding:14px;padding-bottom:calc(14px + var(--safe-bot));
+  display:none;-webkit-overflow-scrolling:touch;
+}
+.screen.active{display:block;animation:scIn 0.2s ease;}
+@keyframes scIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;margin-bottom:12px;
+}
+.card-title{
+  font-size:11px;font-weight:700;color:var(--accent);
+  text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;
+  display:flex;align-items:center;gap:6px;
+}
+.card-title::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px;box-shadow:0 0 6px var(--accent);}
+
+/* ── FIELDS ── */
+.field{margin-bottom:12px;}
+.field:last-child{margin-bottom:0;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:1px;text-transform:uppercase;}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:11px 13px;color:var(--text);
+  font-family:var(--font);font-size:14px;outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none;appearance:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,0.1);
+}
+.field textarea{resize:none;height:70px;line-height:1.5;}
+.field select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234a7a9b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;
+}
+.field option{background:var(--card);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── BUTTONS ── */
+.btn{
+  width:100%;padding:13px;border:none;border-radius:10px;
+  font-family:var(--font);font-size:15px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  letter-spacing:1px;text-transform:uppercase;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:linear-gradient(135deg,#0066cc,var(--accent));color:#fff;box-shadow:0 4px 16px rgba(0,212,255,0.25);}
+.btn-danger{background:rgba(255,71,87,0.12);color:var(--red);border:1px solid rgba(255,71,87,0.25);}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border);}
+.btn-sm{padding:8px 12px;font-size:12px;width:auto;border-radius:7px;}
+
+/* ── SEARCH ── */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-wrap input{
+  width:100%;background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:11px 14px 11px 38px;color:var(--text);
+  font-family:var(--font);font-size:14px;outline:none;transition:border-color 0.2s;
+}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;}
+
+/* ── ENTITY TABS (driver view) ── */
+.entity-tabs{
+  display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;
+}
+.entity-tabs::-webkit-scrollbar{display:none;}
+.etab{
+  flex-shrink:0;padding:6px 14px;border-radius:20px;
+  background:var(--card);border:1px solid var(--border);
+  font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;
+  transition:all 0.2s;letter-spacing:0.5px;white-space:nowrap;
+}
+.etab.active{background:rgba(0,212,255,0.12);border-color:var(--accent);color:var(--accent);}
+
+/* Admin desktop: entity filter row wraps and shows all pills */
+body.admin-mode .entity-tabs {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 0;
+}
+body.admin-mode .etab {
+  font-size: 13px;
+  padding: 7px 18px;
+}
+
+/* ── SHIPMENT CARDS ── */
+.ship-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px;margin-bottom:8px;
+  position:relative;overflow:hidden;transition:all 0.2s;
+}
+.ship-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  border-radius:3px 0 0 3px;
+}
+.ship-card.status-serviced::before  {background:#00ff88;box-shadow:0 0 8px #00ff88;}
+.ship-card.status-complete::before  {background:#00dc64;box-shadow:0 0 8px #00dc64;}
+.ship-card.status-pending::before   {background:var(--yellow);box-shadow:0 0 8px var(--yellow);}
+.ship-card.status-inprogress::before{background:#ffb400;box-shadow:0 0 8px #ffb400;}
+.ship-card.status-issue::before     {background:var(--red);box-shadow:0 0 8px var(--red);}
+.ship-card.status-missed::before    {background:#ff2040;box-shadow:0 0 8px #ff2040;}
+.ship-card:active{transform:scale(0.99);background:var(--border);}
+
+.ship-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+.ship-id{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:500;}
+.ship-entity{font-size:16px;font-weight:700;letter-spacing:0.5px;}
+.ship-account{font-size:13px;color:var(--muted);margin-bottom:6px;}
+
+.ship-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;
+  background:rgba(0,212,255,0.08);color:var(--accent);border:1px solid rgba(0,212,255,0.15);
+  letter-spacing:0.3px;
+}
+.chip.orange{background:rgba(255,107,53,0.08);color:var(--accent2);border-color:rgba(255,107,53,0.15);}
+.chip.muted{background:rgba(74,122,155,0.1);color:var(--muted);border-color:rgba(74,122,155,0.2);}
+
+.status-badge{
+  padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;
+  letter-spacing:0.5px;text-transform:uppercase;flex-shrink:0;
+}
+/* Green statuses */
+.sb-serviced  {background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.25);}
+.sb-complete  {background:rgba(0,220,100,0.12);color:#00dc64;border:1px solid rgba(0,220,100,0.25);}
+/* Yellow statuses */
+.sb-pending   {background:rgba(255,214,10,0.12);color:#ffd60a;border:1px solid rgba(255,214,10,0.25);}
+.sb-inprogress{background:rgba(255,180,0,0.12);color:#ffb400;border:1px solid rgba(255,180,0,0.25);}
+/* Red statuses */
+.sb-issue     {background:rgba(255,71,87,0.12);color:#ff4757;border:1px solid rgba(255,71,87,0.25);}
+.sb-missed    {background:rgba(200,30,50,0.12);color:#ff2040;border:1px solid rgba(200,30,50,0.25);}
+
+.ship-actions{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--border);}
+.ship-actions button{
+  flex:1;padding:8px;border:none;border-radius:7px;
+  font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;
+  transition:all 0.15s;letter-spacing:0.5px;text-transform:uppercase;
+}
+.ship-actions button:active{transform:scale(0.95);}
+.sab-edit{background:rgba(0,212,255,0.1);color:var(--accent);}
+.sab-del{background:rgba(255,71,87,0.1);color:var(--red);}
+.sab-status{background:rgba(0,255,136,0.1);color:var(--green);}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.stat-box{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;text-align:center;
+}
+.stat-n{
+  font-size:30px;font-weight:700;font-family:var(--mono);
+  color:var(--accent);text-shadow:0 0 12px rgba(0,212,255,0.4);
+}
+.stat-n.green{color:var(--green);text-shadow:0 0 12px rgba(0,255,136,0.4);}
+.stat-n.yellow{color:var(--yellow);text-shadow:0 0 12px rgba(255,214,10,0.4);}
+.stat-n.red{color:var(--red);text-shadow:0 0 12px rgba(255,71,87,0.4);}
+.stat-l{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+
+/* ── USERS TABLE ── */
+.user-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.user-row:last-child{border-bottom:none;}
+.urow-av{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,#0066cc,var(--accent));
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;
+}
+.urow-info{flex:1;min-width:0;}
+.urow-name{font-size:14px;font-weight:700;}
+.urow-meta{font-size:11px;color:var(--muted);letter-spacing:0.3px;}
+.urow-del{
+  background:rgba(255,71,87,0.1);color:var(--red);
+  border:1px solid rgba(255,71,87,0.2);border-radius:7px;
+  padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;
+  font-family:var(--font);letter-spacing:0.5px;
+}
+
+/* ── EMPTY ── */
+.empty{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:50px 20px;text-align:center;
+}
+.empty-ico{font-size:48px;margin-bottom:12px;opacity:0.4;}
+.empty p{color:var(--muted);font-size:14px;line-height:1.6;letter-spacing:0.3px;}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:calc(70px + var(--safe-bot));
+  left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:11px 18px;font-size:13px;font-weight:600;
+  white-space:nowrap;opacity:0;letter-spacing:0.3px;
+  transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  pointer-events:none;max-width:90%;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.ok{border-color:var(--green);color:var(--green);}
+#toast.er{border-color:var(--red);color:var(--red);}
+#toast.in{border-color:var(--accent);color:var(--accent);}
+
+/* ── LOADER ── */
+.spin{
+  display:inline-block;width:15px;height:15px;
+  border:2px solid rgba(255,255,255,0.2);border-top-color:#fff;
+  border-radius:50%;animation:rot 0.6s linear infinite;
+}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ── MODAL ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.8);
+  backdrop-filter:blur(6px);z-index:500;display:none;align-items:flex-end;
+}
+.overlay.open{display:flex;}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px 20px 0 0;width:100%;max-width:430px;
+  margin:0 auto;padding:18px 18px calc(18px + var(--safe-bot));
+  max-height:88dvh;overflow-y:auto;
+  animation:slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+.modal-title{
+  font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  margin-bottom:16px;color:var(--accent);display:flex;align-items:center;gap:8px;
+}
+
+/* ── STATUS SELECT COLORS ── */
+.status-select{font-weight:700;letter-spacing:0.3px;}
+.status-select.green {color:#00ff88;border-color:rgba(0,255,136,0.4);}
+.status-select.yellow{color:#ffd60a;border-color:rgba(255,214,10,0.4);}
+.status-select.red   {color:#ff4757;border-color:rgba(255,71,87,0.4);}
+
+/* ── PHOTO UPLOAD ── */
+.photo-upload-area{
+  border:2px dashed var(--border);border-radius:10px;
+  padding:18px;text-align:center;cursor:pointer;
+  transition:all 0.2s;background:var(--surface);position:relative;
+}
+.photo-upload-area:hover,.photo-upload-area.drag{
+  border-color:var(--accent);background:rgba(0,212,255,0.04);
+}
+.photo-upload-area input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.photo-upload-ico{font-size:28px;margin-bottom:6px;}
+.photo-upload-txt{font-size:12px;color:var(--muted);letter-spacing:0.5px;}
+.photo-upload-txt strong{color:var(--accent);}
+
+.photo-preview{
+  position:relative;margin-top:10px;border-radius:10px;overflow:hidden;
+  border:1px solid var(--border);display:none;
+}
+.photo-preview img{width:100%;max-height:200px;object-fit:cover;display:block;}
+.photo-preview-remove{
+  position:absolute;top:8px;right:8px;
+  background:rgba(0,0,0,0.7);border:none;border-radius:50%;
+  width:28px;height:28px;color:#fff;font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.photo-thumb{
+  width:48px;height:48px;border-radius:8px;object-fit:cover;
+  border:1px solid var(--border);cursor:pointer;
+  transition:transform 0.15s;vertical-align:middle;
+}
+.photo-thumb:hover{transform:scale(1.05);}
+
+/* ── PHOTO VIEWER OVERLAY ── */
+#photoViewer{
+  position:fixed;inset:0;background:rgba(0,0,0,0.95);
+  z-index:9999;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:14px;padding:20px;
+}
+#photoViewer.open{display:flex;animation:fadeIn 0.2s ease;}
+#photoViewerImg{
+  max-width:100%;max-height:75dvh;border-radius:12px;
+  object-fit:contain;box-shadow:0 0 40px rgba(0,212,255,0.15);
+}
+#photoViewerFallback{
+  display:none;flex-direction:column;align-items:center;gap:12px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;padding:28px 24px;text-align:center;
+}
+#photoViewerFallback p{font-size:14px;color:var(--muted);line-height:1.6;}
+.pv-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.pv-btn{
+  padding:10px 20px;border-radius:10px;font-family:var(--font);
+  font-size:13px;font-weight:600;cursor:pointer;border:none;
+  letter-spacing:0.5px;text-decoration:none;display:inline-flex;
+  align-items:center;gap:6px;
+}
+.pv-btn-primary{background:linear-gradient(135deg,#0066cc,var(--accent));color:#fff;}
+.pv-btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border);}
+.pv-info{
+  font-size:11px;color:var(--muted);letter-spacing:1px;
+  text-transform:uppercase;text-align:center;
+}
+
+.upload-progress{
+  height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden;display:none;
+}
+.upload-progress-bar{
+  height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#00ff88);
+  border-radius:2px;transition:width 0.3s ease;
+}
+
+::-webkit-scrollbar{width:0;}
+
+/* ══ ADMIN DESKTOP LAYOUT ══════════════════════════════════════ */
+body.admin-mode {
+  overflow: auto;
+}
+body.admin-mode #app {
+  max-width: 100%;
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+  box-shadow: none;
+}
+body.admin-mode .screens {
+  overflow: visible;
+  height: auto;
+}
+body.admin-mode .screen {
+  position: relative;
+  inset: auto;
+  overflow: visible;
+  padding: 20px 28px 40px;
+  display: none;
+}
+body.admin-mode .screen.active {
+  display: block;
+}
+
+/* Desktop header */
+body.admin-mode .status-bar {
+  display: none;
+}
+body.admin-mode .header {
+  padding: 14px 32px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+body.admin-mode .brand-name { font-size: 22px; }
+body.admin-mode .brand-icon { width: 40px; height: 40px; font-size: 20px; }
+
+/* Desktop tab bar — horizontal pill style */
+body.admin-mode .tab-bar {
+  padding: 10px 32px;
+  gap: 6px;
+  justify-content: flex-start;
+  position: sticky;
+  top: 61px;
+  z-index: 99;
+  background: var(--surface);
+}
+body.admin-mode .tab {
+  flex: none;
+  flex-direction: row;
+  padding: 9px 20px;
+  font-size: 13px;
+  gap: 6px;
+  border-radius: 10px;
+  letter-spacing: 1px;
+}
+body.admin-mode .tab .ti { font-size: 15px; }
+
+/* Desktop main content grid */
+body.admin-mode #screen-dashboard {
+  display: none;
+}
+body.admin-mode #screen-dashboard.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+body.admin-mode .stats-grid {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 0;
+}
+body.admin-mode #screen-dashboard .card {
+  grid-column: 1 / -1;
+}
+
+/* Desktop shipments — full width, no cap */
+body.admin-mode #screen-shipments {
+  max-width: 100%;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+body.admin-mode .ship-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 0 20px;
+  padding: 16px 20px;
+}
+body.admin-mode .ship-header {
+  grid-column: 1;
+  grid-row: 1;
+}
+body.admin-mode .ship-meta {
+  grid-column: 1;
+  grid-row: 2;
+}
+body.admin-mode .ship-actions {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  flex-direction: column;
+  justify-content: center;
+  border-top: none;
+  border-left: 1px solid var(--border);
+  padding-top: 0;
+  padding-left: 20px;
+  min-width: 140px;
+}
+body.admin-mode .ship-actions button { width: 100%; }
+
+/* Desktop create form */
+body.admin-mode #screen-create {
+  max-width: 860px;
+  margin: 0 auto;
+}
+body.admin-mode #screen-create .row2 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Desktop drivers */
+body.admin-mode #screen-drivers.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Desktop bulk + history */
+body.admin-mode #screen-bulk  { max-width: 860px; margin: 0 auto; }
+body.admin-mode #screen-history { max-width: 1100px; margin: 0 auto; }
+body.admin-mode #screen-archive { max-width: 860px; margin: 0 auto; }
+
+/* Bulk preview mini-table */
+.bulk-table { width:100%; border-collapse:collapse; font-size:12px; }
+.bulk-table th { background:var(--surface); color:var(--accent); font-size:10px; letter-spacing:1.5px;
+  text-transform:uppercase; padding:8px 10px; text-align:left; white-space:nowrap; }
+.bulk-table td { padding:7px 10px; border-bottom:1px solid var(--border); color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px; }
+.bulk-table tr:last-child td { border-bottom:none; }
+.bulk-table tr:hover td { background:rgba(0,212,255,0.04); }
+
+/* Date group header in history */
+.date-group { margin-bottom:16px; }
+.date-group-header {
+  font-size:12px; font-weight:700; color:var(--accent); letter-spacing:1.5px;
+  text-transform:uppercase; padding:8px 12px;
+  background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.15);
+  border-radius:8px; margin-bottom:8px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.date-group-count { font-size:11px; color:var(--muted); font-weight:400; font-family:var(--mono); }
+
+/* Bulk log lines */
+.blog-ok  { color:var(--green); }
+.blog-er  { color:var(--red); }
+.blog-inf { color:var(--accent); }
+
+/* Desktop overlay — center instead of bottom sheet */
+body.admin-mode .overlay {
+  align-items: center;
+  justify-content: center;
+}
+body.admin-mode .overlay .sheet {
+  border-radius: 16px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+body.admin-mode .overlay .sheet::before { display: none; }
+
+/* Toast position fix for desktop */
+body.admin-mode #toast {
+  bottom: 30px;
+}
+
+/* ══ ADMIN SHIPMENT TABLE ══════════════════════════════════════ */
+.admin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.admin-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+/* Column widths — fixed so nothing collapses */
+.admin-table col.col-id       { width: 90px; }
+.admin-table col.col-entity   { width: 130px; }
+.admin-table col.col-account  { width: 150px; }
+.admin-table col.col-service  { width: 130px; }
+.admin-table col.col-commodity{ width: 120px; }
+.admin-table col.col-boxes    { width: 70px; }
+.admin-table col.col-date     { width: 110px; }
+.admin-table col.col-assigned { width: 120px; }
+.admin-table col.col-status   { width: 130px; }
+.admin-table col.col-photo    { width: 72px; }
+.admin-table col.col-updated  { width: 150px; }
+.admin-table col.col-actions  { width: 150px; }
+.admin-table thead tr {
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+}
+.admin-table thead th {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+.admin-table thead th:hover { color: var(--text); }
+.admin-table thead th .sort-ico {
+  margin-left: 4px;
+  opacity: 0.4;
+  font-style: normal;
+  font-size: 10px;
+}
+.admin-table thead th.sort-asc .sort-ico,
+.admin-table thead th.sort-desc .sort-ico { opacity: 1; color: var(--accent); }
+
+.admin-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.admin-table tbody tr:last-child { border-bottom: none; }
+.admin-table tbody tr:hover { background: rgba(0,212,255,0.04); }
+
+.admin-table td {
+  padding: 11px 14px;
+  vertical-align: middle;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-table td.td-id {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+}
+.admin-table td.td-entity { font-weight: 700; }
+.admin-table td.td-account { color: var(--muted); font-size: 12px; }
+.admin-table td.td-num {
+  font-family: var(--mono);
+  text-align: center;
+  color: var(--muted);
+}
+.admin-table td.td-date {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.admin-table td.td-assigned { font-size: 12px; }
+.admin-table td.td-photo { text-align: center; overflow: visible; }
+.admin-table td.td-status { overflow: visible; }
+.admin-table td.td-actions {
+  overflow: visible;
+  padding: 8px 12px;
+}
+
+/* left colour bar via box-shadow on the row */
+.admin-table tbody tr.status-serviced   td:first-child { box-shadow: inset 3px 0 0 #00ff88; }
+.admin-table tbody tr.status-complete   td:first-child { box-shadow: inset 3px 0 0 #00dc64; }
+.admin-table tbody tr.status-pending    td:first-child { box-shadow: inset 3px 0 0 var(--yellow); }
+.admin-table tbody tr.status-inprogress td:first-child { box-shadow: inset 3px 0 0 #ffb400; }
+.admin-table tbody tr.status-issue      td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+.admin-table tbody tr.status-missed     td:first-child { box-shadow: inset 3px 0 0 #ff2040; }
+
+.tbl-actions { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.tbl-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.tbl-btn:active { transform: scale(0.93); }
+.tbl-btn-edit { background: rgba(0,212,255,0.14); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+.tbl-btn-edit:hover { background: rgba(0,212,255,0.24); }
+.tbl-btn-del  { background: rgba(255,71,87,0.12); color: var(--red); border: 1px solid rgba(255,71,87,0.25); }
+.tbl-btn-del:hover { background: rgba(255,71,87,0.22); }
+.tbl-btn-photo { background: rgba(0,212,255,0.08); color: var(--accent); border: 1px solid rgba(0,212,255,0.2); }
+
+.table-photo-thumb {
+  width: 36px; height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+  transition: transform 0.15s;
+}
+.table-photo-thumb:hover { transform: scale(1.1); }
+
+/* ── DATE FILTER BAR ── */
+.date-filter-bar{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.dfbtn{
+  padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;
+  background:var(--card);border:1px solid var(--border);color:var(--muted);
+  cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;font-family:var(--font);white-space:nowrap;
+}
+.dfbtn:active{transform:scale(0.95);}
+.dfbtn.active{background:rgba(0,212,255,0.12);border-color:var(--accent);color:var(--accent);}
+.df-date-input{
+  padding:6px 12px;border-radius:20px;font-size:12px;font-family:var(--font);
+  background:var(--card);border:1px solid var(--border);color:var(--text);
+  outline:none;cursor:pointer;
+}
+.df-date-input:focus,.df-date-input.active{border-color:var(--accent);color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══ LOGIN ══════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-glow">🚚</div>
+  <div class="login-title">LogiTrack</div>
+  <div class="login-sub">Logistics Management</div>
+  <div class="login-card">
+    <div class="lfield">
+      <label>Username</label>
+      <input type="text" id="lu" placeholder="Enter username" autocapitalize="none" autocomplete="username"/>
+    </div>
+    <div class="lfield">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="lp" placeholder="Enter password" autocomplete="current-password"/>
+        <button class="pw-eye" onclick="togglePw()">👁</button>
+      </div>
+    </div>
+    <br/>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()"><span>Sign In</span></button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════════ -->
+<div class="status-bar">
+  <span class="clk" id="clock">--:--</span>
+  <span style="letter-spacing:2px;font-size:10px">LOGITRACK</span>
+  <span id="connStatus" style="color:var(--green);font-size:10px">● LIVE</span>
+</div>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-icon">🚚</div>
+    <div>
+      <div class="brand-name">LogiTrack</div>
+      <div class="brand-sub" id="hSub">Logistics Platform</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="hbtn" onclick="refreshAll()" title="Refresh">↻</div>
+    <div class="user-pill" onclick="showUserMenu()">
+      <div class="uavatar" id="uAv">?</div>
+      <span class="uname" id="uName">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab active" onclick="showTab('dashboard')" id="tab-dashboard">
+    <span class="ti">◉</span>Dashboard
+  </button>
+  <button class="tab" onclick="showTab('shipments');loadShipments();" id="tab-shipments">
+    <span class="ti">📦</span>Shipments
+  </button>
+  <button class="tab admin-tab" onclick="showTab('create');loadDropdowns();" id="tab-create">
+    <span class="ti">✚</span>New
+  </button>
+  <button class="tab admin-tab" onclick="showTab('drivers');loadUsers();" id="tab-drivers">
+    <span class="ti">👥</span>Drivers
+  </button>
+  <button class="tab admin-tab" onclick="showTab('bulk');" id="tab-bulk">
+    <span class="ti">📤</span>Bulk Upload
+  </button>
+  <button class="tab admin-tab" onclick="showTab('history');initHistory();" id="tab-history">
+    <span class="ti">🕘</span>History
+  </button>
+  <button class="tab admin-tab" onclick="showTab('archive');loadArchiveStats();" id="tab-archive">
+    <span class="ti">🗄</span>Archive
+  </button>
+</div>
+
+<div class="screens">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="screen active" id="screen-dashboard">
+    <!-- Date filter bar -->
+    <div class="date-filter-bar" id="dash-filter-bar">
+      <button class="dfbtn" id="dash-btn-today" onclick="setDateFilter('today')">Today</button>
+      <button class="dfbtn active" id="dash-btn-all"   onclick="setDateFilter('all')">All</button>
+      <input  class="df-date-input" type="date" id="dash-date-pick"
+              onchange="setDateFilter(this.value)" title="Pick a specific date"/>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-n" id="dTotal">—</div><div class="stat-l">Total</div></div>
+      <div class="stat-box"><div class="stat-n yellow" id="dPending">—</div><div class="stat-l">Pending / Progress</div></div>
+      <div class="stat-box"><div class="stat-n red" id="dTransit">—</div><div class="stat-l">Issue / Missed</div></div>
+      <div class="stat-box"><div class="stat-n green" id="dDelivered">—</div><div class="stat-l">Serviced / Complete</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Recent Shipments</div>
+      <div id="recentList"><div class="empty"><div class="empty-ico">📋</div><p>Loading…</p></div></div>
+    </div>
+  </div>
+
+  <!-- ── SHIPMENTS ── -->
+  <div class="screen" id="screen-shipments">
+    <!-- Date filter bar -->
+    <div class="date-filter-bar" id="ship-filter-bar">
+      <button class="dfbtn" id="ship-btn-today" onclick="setDateFilter('today')">Today</button>
+      <button class="dfbtn active" id="ship-btn-all"   onclick="setDateFilter('all')">All</button>
+      <input  class="df-date-input" type="date" id="ship-date-pick"
+              onchange="setDateFilter(this.value)" title="Pick a specific date"/>
+    </div>
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input type="search" id="searchQ" placeholder="Search entity, account, status…" oninput="filterShipments()"/>
+    </div>
+    <!-- Entity tabs for driver view -->
+    <div class="entity-tabs" id="entityTabs" style="display:none"></div>
+    <div id="shipCount" style="font-size:11px;color:var(--muted);margin-bottom:10px;letter-spacing:1px;font-family:var(--mono)"></div>
+    <div id="shipList"></div>
+  </div>
+
+  <!-- ── CREATE (admin) ── -->
+  <div class="screen" id="screen-create">
+    <div class="card">
+      <div class="card-title">New Shipment</div>
+      <div class="row2">
+        <div class="field">
+          <label>Entity *</label>
+          <select id="c-entity"><option value="">— Loading… —</option></select>
+        </div>
+        <div class="field">
+          <label>Account Name *</label>
+          <select id="c-account"><option value="">— Loading… —</option></select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Service Type</label>
+          <select id="c-service"><option value="">— Loading… —</option></select>
+        </div>
+        <div class="field"><label>Commodity</label><input type="text" id="c-commodity" placeholder="Type of goods"/></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Boxes</label><input type="number" id="c-boxes" placeholder="0" min="1"/></div>
+        <div class="field"><label>Date</label><input type="date" id="c-date"/></div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Assign To</label>
+          <select id="c-assigned"><option value="">— Loading… —</option></select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="c-status" class="status-select" onchange="applyStatusColor(this)">
+            <option value="">— Select Status —</option>
+            <option value="Serviced">✅ Serviced</option>
+            <option value="Complete">✅ Complete</option>
+            <option value="Pending">⏳ Pending</option>
+            <option value="In-Progress">⏳ In-Progress</option>
+            <option value="Issue">🔴 Issue</option>
+            <option value="Missed Service">🔴 Missed Service</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="createBtn" onclick="createShipment()"><span>Create Shipment</span></button>
+  </div>
+
+  <!-- ── DRIVERS (admin) ── -->
+  <div class="screen" id="screen-drivers">
+    <div class="card">
+      <div class="card-title">Add New Driver</div>
+      <div class="row2">
+        <div class="field"><label>Driver Name</label><input type="text" id="n-name" placeholder="Full name"/></div>
+        <div class="field"><label>Mobile</label><input type="tel" id="n-mobile" placeholder="+91…"/></div>
+      </div>
+      <div class="field"><label>Email ID</label><input type="email" id="n-email" placeholder="email@example.com"/></div>
+      <div class="row2">
+        <div class="field"><label>Username *</label><input type="text" id="n-username" placeholder="username" autocapitalize="none"/></div>
+        <div class="field"><label>Password *</label><input type="password" id="n-password" placeholder="Min 6 chars"/></div>
+      </div>
+      <div class="field"><label>Role</label>
+        <select id="n-role"><option value="user">Driver / User</option><option value="admin">Admin</option></select>
+      </div>
+      <br/>
+      <button class="btn btn-primary" id="addUserBtn" onclick="addDriver()"><span>Add Driver</span></button>
+    </div>
+    <div class="card">
+      <div class="card-title">All Drivers</div>
+      <div id="driversList"><div style="color:var(--muted);font-size:13px;padding:10px 0">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- ── BULK UPLOAD (admin) ── -->
+  <div class="screen" id="screen-bulk">
+    <div class="card">
+      <div class="card-title">📤 Bulk Upload Shipments</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+        Upload an Excel (.xlsx) or CSV file. Each row becomes one shipment entry.
+        Dates are parsed automatically and entries are grouped by date in the sheet.
+      </p>
+      <!-- Template download hint -->
+      <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--muted);">
+        <strong style="color:var(--accent)">Required columns:</strong>
+        Entity · AccountName · ServiceType · Commodity · Boxes · Assigned · Date · Status
+        <br/><span style="font-size:11px;opacity:0.7">Column order does not matter. Extra columns are ignored.</span>
+      </div>
+      <!-- Drop zone -->
+      <div class="photo-upload-area" id="bulkDropZone"
+           ondragover="bulkDrag(event,true)" ondragleave="bulkDrag(event,false)" ondrop="bulkDrop(event)"
+           style="padding:28px 20px;">
+        <input type="file" id="bulkFileInput" accept=".xlsx,.xls,.csv"
+               onchange="bulkFileSelected(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"/>
+        <div class="photo-upload-ico" id="bulkIco">📊</div>
+        <div class="photo-upload-txt" id="bulkTxt">Tap to select Excel or CSV file<br/><strong>or drag and drop here</strong></div>
+      </div>
+      <!-- Preview table -->
+      <div id="bulkPreview" style="display:none;margin-top:14px;">
+        <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">
+          Preview — first 5 rows
+        </div>
+        <div id="bulkPreviewTable" style="overflow-x:auto;border-radius:8px;border:1px solid var(--border);"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px;">
+          <div id="bulkStats" style="font-size:12px;color:var(--muted);font-family:var(--mono);"></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="bulkClear()">✕ Clear</button>
+            <button class="btn btn-primary btn-sm" id="bulkUploadBtn" onclick="bulkUpload()">
+              <span>Upload All Rows</span>
+            </button>
+          </div>
+        </div>
+        <!-- Per-date summary -->
+        <div id="bulkDateSummary" style="margin-top:12px;"></div>
+      </div>
+      <!-- Result log -->
+      <div id="bulkLog" style="display:none;margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:var(--mono);font-size:11px;max-height:180px;overflow-y:auto;line-height:1.8;"></div>
+    </div>
+  </div>
+
+  <!-- ── HISTORY — reads from Archive sheet ── -->
+  <div class="screen" id="screen-history">
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">🕘 Browse Archived Records</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;">
+        Searches the <strong style="color:var(--accent)">Archive</strong> sheet only.
+        Active shipments are not included here.
+      </p>
+      <div class="row2" style="margin-bottom:10px;">
+        <div class="field"><label>From Date</label><input type="date" id="h-from"/></div>
+        <div class="field"><label>To Date</label><input type="date" id="h-to"/></div>
+      </div>
+      <div class="row2" style="margin-bottom:10px;">
+        <div class="field">
+          <label>Entity</label>
+          <select id="h-entity"><option value="">All Entities</option></select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="h-status">
+            <option value="">All Statuses</option>
+            <option>Serviced</option><option>Complete</option>
+            <option>Pending</option><option>In-Progress</option>
+            <option>Issue</option><option>Missed Service</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="historyClear()">Clear</button>
+        <button class="btn btn-primary" id="historySearchBtn" onclick="historySearch()"><span>Search Archive</span></button>
+      </div>
+    </div>
+    <div id="historyResults">
+      <div class="empty"><div class="empty-ico">🗄</div><p>Search the archive by date range above</p></div>
+    </div>
+  </div>
+
+  <!-- ── ARCHIVE MANAGEMENT (admin) ── -->
+  <div class="screen" id="screen-archive">
+
+    <!-- Archive stats card -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">🗄 Archive Status</div>
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:0;" id="archiveStatsGrid">
+        <div class="stat-box"><div class="stat-n" id="arc-count">—</div><div class="stat-l">Archived rows</div></div>
+        <div class="stat-box"><div class="stat-n" style="font-size:18px;" id="arc-earliest">—</div><div class="stat-l">Earliest date</div></div>
+        <div class="stat-box"><div class="stat-n" style="font-size:18px;" id="arc-latest">—</div><div class="stat-l">Latest date</div></div>
+      </div>
+    </div>
+
+    <!-- Move to archive card -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">📦 Move to Archive</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.7;">
+        All shipments with a date <strong>on or before</strong> the cutoff date will be
+        permanently moved from the <span style="color:var(--accent)">Shipments</span> sheet
+        to the <span style="color:#ff9f43">Archive</span> sheet.
+        The application will no longer load, display, or query those records.
+      </p>
+
+      <!-- Active shipments date range info -->
+      <div id="activeDateInfo" style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);">
+        Loading active shipment range…
+      </div>
+
+      <div class="field">
+        <label>Archive cutoff date <span style="color:var(--red);font-weight:400">(rows on/before this date are moved)</span></label>
+        <input type="date" id="arc-cutoff"/>
+      </div>
+
+      <!-- Preview count before committing -->
+      <div id="arcPreviewCount" style="display:none;background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--accent2);margin-bottom:12px;"></div>
+
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-ghost" style="flex:1" onclick="arcPreview()"><span>Preview</span></button>
+        <button class="btn btn-danger" style="flex:2" id="arcMoveBtn" onclick="arcConfirmMove()" disabled>
+          <span id="arcMoveBtnLabel">Move to Archive</span>
+        </button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6;">
+        ⚠ This action cannot be undone from the app. The data is safe in the Archive sheet
+        in your Google Spreadsheet — it is never deleted.
+      </p>
+    </div>
+
+    <!-- Archive log -->
+    <div id="arcLog" style="display:none;" class="card">
+      <div class="card-title">📋 Operation Log</div>
+      <div id="arcLogContent" style="font-family:var(--mono);font-size:12px;line-height:2;"></div>
+    </div>
+
+  </div>
+
+</div><!-- /screens -->
+</div><!-- /app -->
+
+<!-- ── EDIT MODAL (admin) ── -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏ Edit Shipment <span id="editShipId" style="font-size:11px;font-family:var(--mono);color:var(--muted)"></span></div>
+    <input type="hidden" id="e-ID"/>
+    <div class="row2">
+      <div class="field"><label>Entity</label>
+        <select id="e-Entity"><option value="">— Select —</option></select>
+      </div>
+      <div class="field"><label>Account Name</label>
+        <select id="e-AccountName"><option value="">— Select —</option></select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Service Type</label>
+        <select id="e-ServiceType"><option value="">— Select —</option></select>
+      </div>
+      <div class="field"><label>Commodity</label><input type="text" id="e-Commodity"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Boxes</label><input type="number" id="e-Boxes" min="1"/></div>
+      <div class="field"><label>Date</label><input type="date" id="e-Date"/></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Assigned To</label>
+        <select id="e-Assigned"><option value="">— Select Driver —</option></select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="e-Status" class="status-select" onchange="applyStatusColor(this)">
+          <option value="">— Select Status —</option>
+          <option value="Serviced">✅ Serviced</option>
+          <option value="Complete">✅ Complete</option>
+          <option value="Pending">⏳ Pending</option>
+          <option value="In-Progress">⏳ In-Progress</option>
+          <option value="Issue">🔴 Issue</option>
+          <option value="Missed Service">🔴 Missed Service</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeOverlay('editOverlay')">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveEdit()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STATUS MODAL (driver) ── -->
+<div class="overlay" id="statusOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔄 Update Status</div>
+    <input type="hidden" id="s-ID"/>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Shipment</div>
+      <div id="s-info" style="font-size:15px;font-weight:700"></div>
+    </div>
+    <div class="field"><label>New Status</label>
+      <select id="s-Status" class="status-select" onchange="applyStatusColor(this)">
+        <option value="">— Select Status —</option>
+        <option value="Serviced">✅ Serviced</option>
+        <option value="Complete">✅ Complete</option>
+        <option value="Pending">⏳ Pending</option>
+        <option value="In-Progress">⏳ In-Progress</option>
+        <option value="Issue">🔴 Issue</option>
+        <option value="Missed Service">🔴 Missed Service</option>
+      </select>
+    </div>
+
+    <!-- PHOTO UPLOAD -->
+    <div class="field" style="margin-top:12px">
+      <label>📷 Upload Photo <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <div class="photo-upload-area" id="photoDropZone"
+           ondragover="photoDrag(event,true)" ondragleave="photoDrag(event,false)" ondrop="photoDrop(event)">
+        <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="photoSelected(this)"/>
+        <div class="photo-upload-ico">📸</div>
+        <div class="photo-upload-txt">Tap to take photo or <strong>choose from gallery</strong></div>
+      </div>
+      <div class="photo-preview" id="photoPreview">
+        <img id="photoPreviewImg" src="" alt="preview"/>
+        <button class="photo-preview-remove" onclick="removePhoto()">✕</button>
+      </div>
+      <div class="upload-progress" id="uploadProgress">
+        <div class="upload-progress-bar" id="uploadProgressBar"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeStatusModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" id="saveStatusBtn" onclick="saveStatus()">
+        <span>Update Status</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── USER MENU MODAL ── -->
+<div class="overlay" id="userOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">👤 Account</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Logged in as</div>
+      <div style="font-size:18px;font-weight:700;color:var(--accent)" id="menuName">—</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px" id="menuRole">—</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px" id="menuEmail">—</div>
+    </div>
+    <button class="btn btn-danger" onclick="doLogout()">🚪 Sign Out</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-ghost" onclick="closeOverlay('userOverlay')">Cancel</button>
+  </div>
+</div>
+
+<!-- ── PHOTO VIEWER ── -->
+<div id="photoViewer">
+  <!-- Image view -->
+  <div id="photoViewerImgWrap" style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%">
+    <div class="pv-info" id="pvLoadingText">⏳ Loading photo…</div>
+    <img id="photoViewerImg" src="" alt="Photo"
+         onload="pvImgLoaded()" onerror="pvImgError()"/>
+    <div class="pv-actions" id="pvActions" style="display:none">
+      <a id="pvOpenLink" href="#" target="_blank" class="pv-btn pv-btn-primary">🔗 Open in Browser</a>
+      <button class="pv-btn pv-btn-ghost" onclick="closePhotoViewer()">✕ Close</button>
+    </div>
+  </div>
+  <!-- Fallback if image fails to load -->
+  <div id="photoViewerFallback">
+    <div style="font-size:48px">📷</div>
+    <p>Photo cannot be displayed directly.<br/>Click below to open it in your browser.</p>
+    <div class="pv-actions">
+      <a id="pvFallbackLink" href="#" target="_blank" class="pv-btn pv-btn-primary">🔗 Open Photo</a>
+      <button class="pv-btn pv-btn-ghost" onclick="closePhotoViewer()">✕ Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZk92gEG1UvdbLZZ2Anb3UdeoxhjLqkkRI9kNC66w3BBYMDUAzsEp68SNNIaCsyQdO-w/exec";
+
+// ── STATE ──────────────────────────────────────────────────────
+let session      = { username:"", token:"", role:"", driverName:"", email:"" };
+let allShips     = [];
+let activeEntity = "All";
+let activeDateFilter = "all"; // "today" | "all" | "YYYY-MM-DD"
+
+// ── AUTH HELPER ────────────────────────────────────────────────
+function authPayload(extra) {
+  return Object.assign({ sessionUser: session.username, token: session.token }, extra);
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  updateClock(); setInterval(updateClock, 1000);
+  document.getElementById("c-date").value = new Date().toISOString().split("T")[0];
+
+  // [FIX: session persistence] Restore session from sessionStorage on page load
+  const saved = sessionStorage.getItem("lt_session");
+  if (saved) {
+    try {
+      session = JSON.parse(saved);
+      enterApp();
+    } catch(e) {
+      sessionStorage.removeItem("lt_session");
+      showLogin();
+    }
+  } else {
+    showLogin();
+  }
+});
+
+function updateClock() {
+  document.getElementById("clock").textContent =
+    new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",hour12:false});
+}
+
+// ── LOGIN ──────────────────────────────────────────────────────
+function showLogin() { document.getElementById("loginScreen").classList.remove("hidden"); }
+
+async function doLogin() {
+  const u = document.getElementById("lu").value.trim();
+  const p = document.getElementById("lp").value.trim();
+  if (!u || !p) { loginErr("Enter username and password"); return; }
+  const btn = document.getElementById("loginBtn");
+  btn.innerHTML = '<span class="spin"></span>'; btn.disabled = true;
+  document.getElementById("loginErr").classList.remove("show");
+  try {
+    const res = await api({ action:"login", username:u, password:p });
+    if (res.success) {
+      session = { username:res.username, token:res.token, role:res.role,
+                  driverName:res.driverName, email:res.email };
+      // [FIX: session persistence] Save to sessionStorage — survives refresh, clears on tab close
+      sessionStorage.setItem("lt_session", JSON.stringify(session));
+      enterApp();
+    } else {
+      loginErr(res.message);
+    }
+  } catch(e) { loginErr("Connection error. Check internet."); }
+  finally { btn.innerHTML = "<span>Sign In</span>"; btn.disabled = false; }
+}
+
+function loginErr(msg) {
+  const el = document.getElementById("loginErr");
+  el.textContent = "⚠ " + msg;
+  el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+}
+
+function togglePw() {
+  const i = document.getElementById("lp");
+  i.type = i.type === "password" ? "text" : "password";
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !document.getElementById("loginScreen").classList.contains("hidden")) doLogin();
+});
+
+// ── AUTO-REFRESH (admin only) ──────────────────────────────────
+let autoRefreshInterval = null;
+let lastShipHash = "";
+let lastUserHash = "";
+
+// ── AUTO-REFRESH TICK — runs for BOTH admin and driver ─────────
+// Admin: 30s interval, detects Issue/Missed status changes, updates users tab
+// Driver: 20s interval, keeps their own shipment list current
+async function autoRefreshTick() {
+  if (!session.username) return;
+  try {
+    const sRes = await api(authPayload({ action:"getShipments" }));
+    if (sRes.success) {
+      const newHash = JSON.stringify(sRes.data);
+      if (newHash !== lastShipHash) {
+
+        // ── Alert admin when driver marks Issue or Missed Service ──
+        if (session.role === "admin" && lastShipHash !== "") {
+          const prevMap = {};
+          allShips.forEach(s => { prevMap[s.ID] = s.Status; });
+          sRes.data.forEach(s => {
+            const prev = prevMap[s.ID];
+            if (prev && prev !== s.Status &&
+                ["Issue","Missed Service"].includes(s.Status)) {
+              toast("⚠ " + (s.Entity||s.ID) + " — marked " + s.Status, "er");
+            }
+          });
+        }
+
+        lastShipHash = newHash;
+        allShips = sRes.data;
+        renderDashboard(allShips);
+
+        // Re-render shipments list only if that tab is active (avoid scroll jump)
+        const shipScreen = document.getElementById("screen-shipments");
+        if (shipScreen && shipScreen.classList.contains("active")) {
+          renderShipments(allShips);
+        }
+
+        const cs = document.getElementById("connStatus");
+        if (cs) { cs.textContent = "● UPDATED"; setTimeout(()=>{ cs.textContent="● LIVE"; }, 2000); }
+      }
+    } else if (sRes.expired) {
+      stopAutoRefresh();
+      doLogout();
+      toast("⏱ Session expired. Please sign in again.", "er");
+      return;
+    }
+
+    // Refresh users/drivers list only for admin when that tab is active
+    if (session.role === "admin") {
+      const driverScreen = document.getElementById("screen-drivers");
+      if (driverScreen && driverScreen.classList.contains("active")) {
+        const uRes = await api(authPayload({ action:"listUsers" }));
+        if (uRes.success) {
+          const newUHash = JSON.stringify(uRes.data);
+          if (newUHash !== lastUserHash) { lastUserHash = newUHash; renderDrivers(uRes.data); }
+        }
+      }
+    }
+  } catch(e) { /* silent — network blip */ }
+}
+
+// intervalMs: 30000 for admin, 20000 for driver
+function startAutoRefresh(intervalMs) {
+  stopAutoRefresh();
+  lastShipHash = ""; lastUserHash = "";
+  autoRefreshInterval = setInterval(autoRefreshTick, intervalMs || 30000);
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshInterval) { clearInterval(autoRefreshInterval); autoRefreshInterval = null; }
+}
+
+function enterApp() {
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("uAv").textContent   = session.username.charAt(0).toUpperCase();
+  document.getElementById("uName").textContent = session.driverName || session.username;
+  document.getElementById("hSub").textContent  = session.role === "admin" ? "🔑 Admin Console" : "🚚 Driver Portal";
+  if (session.role === "admin") {
+    document.querySelectorAll(".admin-tab").forEach(t => t.classList.add("show"));
+    loadDropdowns();
+    document.body.classList.add("admin-mode");
+    const vp = document.querySelector('meta[name="viewport"]');
+    if (vp) vp.setAttribute("content", "width=device-width,initial-scale=1.0");
+    startAutoRefresh(30000); // admin polls every 30s
+  } else {
+    document.body.classList.remove("admin-mode");
+    const vp = document.querySelector('meta[name="viewport"]');
+    if (vp) vp.setAttribute("content", "width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no");
+    startAutoRefresh(20000); // driver polls every 20s — sees status updates promptly
+  }
+  showTab("dashboard");
+  activeDateFilter = "all"; // show all records by default
+  syncDateFilterUI();
+  loadShipments();
+}
+
+// ── LOAD DROPDOWNS ─────────────────────────────────────────────
+async function loadDropdowns() {
+  try {
+    const res = await api(authPayload({ action:"getDropdowns" }));
+    if (!res.success) return;
+    const entityOpts = `<option value="">— Select Entity —</option>` +
+      res.entities.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join("");
+    document.getElementById("c-entity").innerHTML = entityOpts;
+    document.getElementById("e-Entity").innerHTML = entityOpts;
+    const accountOpts = `<option value="">— Select Account —</option>` +
+      res.accountNames.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("");
+    document.getElementById("c-account").innerHTML = accountOpts;
+    document.getElementById("e-AccountName").innerHTML = accountOpts;
+    const svcOpts = `<option value="">— Select Service Type —</option>` +
+      res.serviceTypes.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
+    document.getElementById("c-service").innerHTML = svcOpts;
+    document.getElementById("e-ServiceType").innerHTML = svcOpts;
+    const driverOpts = `<option value="">— Select Driver —</option>` +
+      res.drivers.map(d=>`<option value="${esc(d.value)}">${esc(d.label)} (@${esc(d.value)})</option>`).join("");
+    document.getElementById("c-assigned").innerHTML = driverOpts;
+    document.getElementById("e-Assigned").innerHTML = driverOpts;
+  } catch(e) { console.error("Dropdown load failed:", e); }
+}
+
+// ── LOGOUT ─────────────────────────────────────────────────────
+function doLogout() {
+  stopAutoRefresh();
+  session = { username:"", token:"", role:"", driverName:"", email:"" };
+  // [FIX: session persistence] Clear sessionStorage on logout
+  sessionStorage.removeItem("lt_session");
+  allShips = [];
+  closeOverlay("userOverlay");
+  document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("show"));
+  document.body.classList.remove("admin-mode");
+  const vp = document.querySelector('meta[name="viewport"]');
+  if (vp) vp.setAttribute("content", "width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no");
+  document.getElementById("lu").value = "";
+  document.getElementById("lp").value = "";
+  document.getElementById("loginErr").classList.remove("show");
+  showLogin();
+  toast("👋 Signed out","in");
+}
+
+// ── TABS ───────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("screen-"+name).classList.add("active");
+  document.getElementById("tab-"+name).classList.add("active");
+}
+
+function refreshAll() { loadShipments(); toast("↻ Refreshed","in"); }
+
+// ── LOAD SHIPMENTS ─────────────────────────────────────────────
+async function loadShipments() {
+  try {
+    const res = await api(authPayload({ action:"getShipments" }));
+    if (res.success) {
+      allShips = res.data;
+      lastShipHash = JSON.stringify(res.data);
+      renderDashboard(allShips);
+      renderShipments(allShips);
+    } else if (res.expired) {
+      // [FIX: token expiry] Handle expired session from any API call
+      doLogout();
+      toast("⏱ Session expired. Please sign in again.", "er");
+    }
+  } catch(e) { toast("❌ Failed to load shipments","er"); }
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────
+function renderDashboard(ships) {
+  const filtered = applyDateFilter(ships);
+  document.getElementById("dTotal").textContent     = filtered.length;
+  document.getElementById("dPending").textContent   = filtered.filter(s=>s.Status==="Pending"||s.Status==="In-Progress").length;
+  document.getElementById("dTransit").textContent   = filtered.filter(s=>s.Status==="Issue"||s.Status==="Missed Service").length;
+  document.getElementById("dDelivered").textContent = filtered.filter(s=>s.Status==="Serviced"||s.Status==="Complete").length;
+  const recent = [...filtered].reverse().slice(0,5);
+  const el = document.getElementById("recentList");
+  if (!recent.length) { el.innerHTML=`<div class="empty"><div class="empty-ico">📦</div><p>No shipments for this date</p></div>`; return; }
+  el.innerHTML = recent.map(s=>{
+    const rp = getPhotoUrl(s);
+    return `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700">${esc(s.Entity||"—")}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${esc(s.ID||"")} · ${esc(s.AccountName||"")}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        ${rp && rp.startsWith("http") ?
+          `<span onclick="viewPhoto('${rp}')"
+                 style="font-size:18px;cursor:pointer;opacity:0.85" title="View photo">📷</span>` : ""}
+        <span class="status-badge ${sbClass(s.Status)}">${esc(s.Status||"—")}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ── SHIPMENTS LIST ─────────────────────────────────────────────
+function getPhotoUrl(s) {
+  return s.PhotoURL || s.photoURL || s.photoUrl || s.photo_url || s.Photo || s.photo || "";
+}
+
+let tableSortCol = "";
+let tableSortDir = 1;
+
+function renderShipments(ships) {
+  // Apply date filter first, then entity + search
+  let filtered = applyDateFilter(ships);
+
+  const entities = ["All", ...new Set(ships.map(s=>s.Entity).filter(Boolean))];
+  const tabsEl   = document.getElementById("entityTabs");
+  tabsEl.style.display = "flex";
+  tabsEl.innerHTML = entities.map(e=>
+    `<div class="etab${e===activeEntity?" active":""}" onclick="setEntity('${esc(e)}')">${esc(e)}</div>`
+  ).join("");
+  if (activeEntity !== "All") filtered = filtered.filter(s=>s.Entity===activeEntity);
+  const q = document.getElementById("searchQ").value.toLowerCase();
+  if (q) filtered = filtered.filter(s=>Object.values(s).some(v=>String(v).toLowerCase().includes(q)));
+  document.getElementById("shipCount").textContent = filtered.length+" shipment"+(filtered.length!==1?"s":"");
+  const el = document.getElementById("shipList");
+  if (!filtered.length) { el.innerHTML=`<div class="empty"><div class="empty-ico">📦</div><p>No shipments found</p></div>`; return; }
+
+  if (session.role !== "admin") {
+    el.innerHTML = filtered.map(s=>{
+      const sc = statusClass(s.Status);
+      const sb = sbClass(s.Status);
+      const photoUrl = getPhotoUrl(s);
+      const hasPhoto = photoUrl && String(photoUrl).trim().startsWith("http");
+      const photoBlock = hasPhoto ? `
+        <div onclick="viewPhoto('${photoUrl}')"
+             style="margin:10px 0 6px;display:flex;align-items:center;gap:12px;
+                    background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.18);
+                    border-radius:10px;padding:10px 12px;cursor:pointer">
+          <div style="width:56px;height:56px;border-radius:9px;overflow:hidden;flex-shrink:0;
+                      background:var(--surface);border:1px solid var(--border);
+                      display:flex;align-items:center;justify-content:center">
+            <img src="${photoUrl}" alt="photo"
+                 style="width:100%;height:100%;object-fit:cover;display:block"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+            <span style="display:none;font-size:22px;width:100%;height:100%;
+                         align-items:center;justify-content:center">📷</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);letter-spacing:0.3px">📷 View Uploaded Photo</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Tap to open full screen</div>
+          </div>
+          <div style="font-size:22px;color:var(--accent)">›</div>
+        </div>` : "";
+      return `
+      <div class="ship-card ${sc}">
+        <div class="ship-header">
+          <div>
+            <div class="ship-id">${esc(s.ID||"—")}</div>
+            <div class="ship-entity">${esc(s.Entity||"—")}</div>
+            <div class="ship-account">${esc(s.AccountName||"—")}</div>
+          </div>
+          <span class="status-badge ${sb}">${esc(s.Status||"—")}</span>
+        </div>
+        <div class="ship-meta">
+          ${s.ServiceType?`<span class="chip">📋 ${esc(s.ServiceType)}</span>`:""}
+          ${s.Commodity  ?`<span class="chip orange">📦 ${esc(s.Commodity)}</span>`:""}
+          ${s.Boxes      ?`<span class="chip muted">🗃 ${esc(s.Boxes)} boxes</span>`:""}
+          ${s.Assigned   ?`<span class="chip muted">👤 ${esc(s.Assigned)}</span>`:""}
+          ${s.Date       ?`<span class="chip muted">📅 ${esc(s.Date)}</span>`:""}
+          ${s.UpdatedAt  ?`<span class="chip muted">🕐 ${esc(fmtUpdated(s.UpdatedAt))}</span>`:""}
+        </div>
+        ${photoBlock}
+        <div class="ship-actions">
+          <button class="sab-status" onclick='openStatus(${JSON.stringify(s)})'>🔄 Update Status</button>
+        </div>
+      </div>`;
+    }).join("");
+    return;
+  }
+
+  // Admin table view
+  if (tableSortCol) {
+    filtered = [...filtered].sort((a,b)=>{
+      const av = String(a[tableSortCol]||"").toLowerCase();
+      const bv = String(b[tableSortCol]||"").toLowerCase();
+      return av < bv ? -tableSortDir : av > bv ? tableSortDir : 0;
+    });
+    document.getElementById("shipCount").textContent = filtered.length+" shipment"+(filtered.length!==1?"s":"");
+  }
+
+  const cols = [
+    { key:"ID",          label:"ID" },
+    { key:"Entity",      label:"Entity" },
+    { key:"AccountName", label:"Account" },
+    { key:"ServiceType", label:"Service Type" },
+    { key:"Commodity",   label:"Commodity" },
+    { key:"Boxes",       label:"Boxes" },
+    { key:"Date",        label:"Date" },
+    { key:"Assigned",    label:"Assigned" },
+    { key:"Status",      label:"Status" },
+    { key:"UpdatedAt",   label:"Last updated" },
+    { key:"_photo",      label:"Photo",   noSort:true },
+    { key:"_actions",    label:"Actions", noSort:true },
+  ];
+
+  const thHtml = cols.map(c => {
+    if (c.noSort) return `<th style="text-align:center">${c.label}</th>`;
+    const active = tableSortCol === c.key;
+    const ico = active ? (tableSortDir===1?"▲":"▼") : "⇅";
+    const cls = active ? (tableSortDir===1?"sort-asc":"sort-desc") : "";
+    return `<th class="${cls}" onclick="tableSort('${c.key}')">${c.label} <i class="sort-ico">${ico}</i></th>`;
+  }).join("");
+
+  const rowsHtml = filtered.map(s => {
+    const sc = statusClass(s.Status);
+    const sb = sbClass(s.Status);
+    const photoUrl = getPhotoUrl(s);
+    const hasPhoto = photoUrl && String(photoUrl).trim().startsWith("http");
+    const photoCell = hasPhoto
+      ? `<img src="${photoUrl}" alt="photo" class="table-photo-thumb"
+              onclick="viewPhoto('${photoUrl}')"
+              onerror="this.outerHTML='<span style=\\'font-size:18px;cursor:pointer\\' onclick=\\'viewPhoto(\\''+\\'${photoUrl}'+\\'\\')\\'>📷</span>'">`
+      : `<span style="color:var(--muted);font-size:18px">—</span>`;
+    return `
+    <tr class="${sc}">
+      <td class="td-id">${esc(s.ID||"—")}</td>
+      <td class="td-entity">${esc(s.Entity||"—")}</td>
+      <td class="td-account">${esc(s.AccountName||"—")}</td>
+      <td>${esc(s.ServiceType||"—")}</td>
+      <td>${esc(s.Commodity||"—")}</td>
+      <td class="td-num">${esc(s.Boxes||"—")}</td>
+      <td class="td-date">${esc(s.Date||"—")}</td>
+      <td class="td-assigned">${s.Assigned?`👤 ${esc(s.Assigned)}`:"—"}</td>
+      <td class="td-status"><span class="status-badge ${sb}">${esc(s.Status||"—")}</span></td>
+      <td class="td-date td-updated">${fmtUpdated(s.UpdatedAt)}</td>
+      <td class="td-photo">${photoCell}</td>
+      <td class="td-actions">
+        <div class="tbl-actions">
+          <button class="tbl-btn tbl-btn-edit" onclick='openEdit(${JSON.stringify(s)})'>✏ Edit</button>
+          <button class="tbl-btn tbl-btn-del"  onclick="delShipment('${esc(s.ID)}',this)">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+
+  el.innerHTML = `
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <colgroup>
+        <col class="col-id"/><col class="col-entity"/><col class="col-account"/>
+        <col class="col-service"/><col class="col-commodity"/><col class="col-boxes"/>
+        <col class="col-date"/><col class="col-assigned"/><col class="col-status"/>
+        <col class="col-updated"/><col class="col-photo"/><col class="col-actions"/>
+      </colgroup>
+      <thead><tr>${thHtml}</tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </div>`;
+}
+
+function tableSort(col) {
+  if (tableSortCol === col) tableSortDir *= -1;
+  else { tableSortCol = col; tableSortDir = 1; }
+  renderShipments(allShips);
+}
+
+function fmtUpdated(val) {
+  if (!val || String(val).trim() === "") return "—";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return String(val);
+    const now = new Date();
+    const isToday = d.getDate()===now.getDate()&&d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    const hhmm = d.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",hour12:false});
+    if (isToday) return "Today "+hhmm;
+    return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+" "+hhmm;
+  } catch(e) { return String(val); }
+}
+
+function filterShipments() { renderShipments(allShips); }
+function setEntity(name) { activeEntity = name; renderShipments(allShips); }
+
+// ── DATE FILTER ────────────────────────────────────────────────
+// Returns the ISO date string (YYYY-MM-DD) for today
+function todayISO() {
+  return new Date().toISOString().split("T")[0];
+}
+
+// Filter an array of shipments by activeDateFilter
+// Matches on the shipment's Date field (col G in the sheet)
+function applyDateFilter(ships) {
+  if (activeDateFilter === "all") return ships;
+  const target = activeDateFilter === "today" ? todayISO() : activeDateFilter;
+  return ships.filter(s => {
+    const raw = s.Date || s.date || "";
+    if (!raw) return false;
+    try {
+      return new Date(raw).toISOString().split("T")[0] === target;
+    } catch(e) { return false; }
+  });
+}
+
+// Called by Today / All buttons and date picker
+function setDateFilter(value) {
+  activeDateFilter = value; // "today" | "all" | "YYYY-MM-DD"
+  syncDateFilterUI();
+  renderDashboard(allShips);
+  renderShipments(allShips);
+}
+
+// Keep both bars (dashboard + shipments) in sync with activeDateFilter state
+function syncDateFilterUI() {
+  const isToday  = activeDateFilter === "today";
+  const isAll    = activeDateFilter === "all";
+  const isCustom = !isToday && !isAll;
+  const today    = todayISO();
+
+  // Dashboard bar
+  const dbToday = document.getElementById("dash-btn-today");
+  const dbAll   = document.getElementById("dash-btn-all");
+  const dbPick  = document.getElementById("dash-date-pick");
+  if (dbToday) dbToday.classList.toggle("active", isToday);
+  if (dbAll)   dbAll.classList.toggle("active", isAll);
+  if (dbPick)  {
+    dbPick.classList.toggle("active", isCustom);
+    dbPick.value = isCustom ? activeDateFilter : "";
+    dbPick.max   = today;
+  }
+
+  // Shipments bar
+  const sbToday = document.getElementById("ship-btn-today");
+  const sbAll   = document.getElementById("ship-btn-all");
+  const sbPick  = document.getElementById("ship-date-pick");
+  if (sbToday) sbToday.classList.toggle("active", isToday);
+  if (sbAll)   sbAll.classList.toggle("active", isAll);
+  if (sbPick)  {
+    sbPick.classList.toggle("active", isCustom);
+    sbPick.value = isCustom ? activeDateFilter : "";
+    sbPick.max   = today;
+  }
+}
+
+// ── CREATE SHIPMENT ────────────────────────────────────────────
+async function createShipment() {
+  const entity  = document.getElementById("c-entity").value;
+  const account = document.getElementById("c-account").value;
+  const status  = document.getElementById("c-status").value;
+  if (!entity||!account) { toast("⚠ Entity and Account required","er"); return; }
+  if (!status)           { toast("⚠ Please select a Status","er"); return; }
+  const btn = document.getElementById("createBtn");
+  btn.innerHTML='<span class="spin"></span>'; btn.disabled=true;
+  try {
+    const res = await api(authPayload({
+      action:"createShipment",
+      Entity:      entity,
+      AccountName: account,
+      ServiceType: document.getElementById("c-service").value,
+      Commodity:   document.getElementById("c-commodity").value.trim(),
+      Boxes:       document.getElementById("c-boxes").value,
+      Assigned:    document.getElementById("c-assigned").value,
+      Date:        document.getElementById("c-date").value,
+      Status:      document.getElementById("c-status").value,
+    }));
+    if (res.success) {
+      toast("✅ Shipment created: "+res.id,"ok");
+      document.getElementById("c-entity").value   = "";
+      document.getElementById("c-account").value  = "";
+      document.getElementById("c-assigned").value = "";
+      document.getElementById("c-service").value  = "";
+      const cSt = document.getElementById("c-status");
+      cSt.value = ""; cSt.classList.remove("green","yellow","red");
+      document.getElementById("c-commodity").value = "";
+      document.getElementById("c-boxes").value    = "";
+      document.getElementById("c-date").value     = new Date().toISOString().split("T")[0];
+      loadShipments(); showTab("shipments");
+    } else throw new Error(res.message);
+  } catch(e) { toast("❌ "+e.message,"er"); }
+  finally { btn.innerHTML="<span>Create Shipment</span>"; btn.disabled=false; }
+}
+
+// ── EDIT (admin) ───────────────────────────────────────────────
+function openEdit(s) {
+  document.getElementById("editShipId").textContent = s.ID;
+  ["ID","ServiceType","Commodity","Boxes","Status"].forEach(f=>{
+    const el=document.getElementById("e-"+f); if(el) el.value=s[f]||"";
+  });
+  ["Entity","AccountName","Assigned"].forEach(f=>{
+    const el=document.getElementById("e-"+f); if(el) el.value=s[f]||"";
+  });
+  const dateEl=document.getElementById("e-Date");
+  if(dateEl){ try{ dateEl.value=s.Date?new Date(s.Date).toISOString().split("T")[0]:""; }catch(e){ dateEl.value=""; } }
+  const eSt=document.getElementById("e-Status");
+  if(eSt){ eSt.value=s.Status||""; applyStatusColor(eSt); }
+  document.getElementById("editOverlay").classList.add("open");
+}
+
+async function saveEdit() {
+  const payload = authPayload({ action:"updateShipment" });
+  ["ID","Entity","AccountName","ServiceType","Commodity","Boxes","Date","Assigned","Status"].forEach(f=>{
+    const el=document.getElementById("e-"+f); if(el) payload[f]=el.value.trim();
+  });
+  try {
+    const res = await api(payload);
+    if(res.success){ toast("✅ Shipment updated","ok"); closeOverlay("editOverlay"); loadShipments(); }
+    else throw new Error(res.message);
+  } catch(e){ toast("❌ "+e.message,"er"); }
+}
+
+async function delShipment(id, btn) {
+  if(!confirm("Delete shipment "+id+"?")) return;
+  const row = btn.closest(".ship-card") || btn.closest("tr");
+  if (row) row.style.opacity = "0.4";
+  try {
+    const res = await api(authPayload({ action:"deleteShipment", ID:id }));
+    if(res.success){ toast("🗑 Deleted","ok"); loadShipments(); }
+    else throw new Error(res.message);
+  } catch(e){ if(row) row.style.opacity="1"; toast("❌ "+e.message,"er"); }
+}
+
+// ── STATUS UPDATE (driver) ─────────────────────────────────────
+let selectedPhotoBase64 = null;
+let selectedPhotoMime   = null;
+
+function openStatus(s) {
+  document.getElementById("s-ID").value = s.ID;
+  document.getElementById("s-info").textContent = `${s.Entity} — ${s.AccountName}`;
+  const sSt = document.getElementById("s-Status");
+  sSt.value = s.Status || "";
+  applyStatusColor(sSt);
+  removePhoto();
+  document.getElementById("statusOverlay").classList.add("open");
+}
+
+function closeStatusModal() { closeOverlay("statusOverlay"); removePhoto(); }
+
+function photoSelected(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  // [FIX: client-side MIME check] Validate image type before upload
+  const allowed = ["image/jpeg","image/jpg","image/png","image/gif","image/webp","image/heic"];
+  if (!allowed.includes(file.type.toLowerCase())) {
+    toast("⚠ Only image files allowed (JPG, PNG, WEBP, GIF)","er");
+    input.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    selectedPhotoBase64 = dataUrl.split(",")[1];
+    selectedPhotoMime   = file.type || "image/jpeg";
+    document.getElementById("photoPreviewImg").src = dataUrl;
+    document.getElementById("photoPreview").style.display = "block";
+    document.querySelector(".photo-upload-area .photo-upload-ico").textContent = "✅";
+    document.querySelector(".photo-upload-area .photo-upload-txt").innerHTML = `<strong>${esc(file.name)}</strong>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function photoDrag(e, over) {
+  e.preventDefault();
+  document.getElementById("photoDropZone").classList.toggle("drag", over);
+}
+function photoDrop(e) {
+  e.preventDefault();
+  document.getElementById("photoDropZone").classList.remove("drag");
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith("image/")) {
+    const dt = new DataTransfer(); dt.items.add(file);
+    const inp = document.getElementById("photoInput");
+    inp.files = dt.files; photoSelected(inp);
+  }
+}
+
+function removePhoto() {
+  selectedPhotoBase64 = null; selectedPhotoMime = null;
+  document.getElementById("photoInput").value = "";
+  document.getElementById("photoPreview").style.display = "none";
+  document.getElementById("photoPreviewImg").src = "";
+  document.querySelector(".photo-upload-area .photo-upload-ico").textContent = "📸";
+  document.querySelector(".photo-upload-area .photo-upload-txt").innerHTML =
+    `Tap to take photo or <strong>choose from gallery</strong>`;
+  document.getElementById("uploadProgress").style.display = "none";
+  document.getElementById("uploadProgressBar").style.width = "0%";
+}
+
+async function saveStatus() {
+  const id     = document.getElementById("s-ID").value;
+  const status = document.getElementById("s-Status").value;
+  if (!status) { toast("⚠ Please select a status","er"); return; }
+  const btn = document.getElementById("saveStatusBtn");
+  btn.innerHTML = '<span class="spin"></span>'; btn.disabled = true;
+  if (selectedPhotoBase64) {
+    document.getElementById("uploadProgress").style.display = "block";
+    let pct = 0;
+    const pBar = document.getElementById("uploadProgressBar");
+    const pInt = setInterval(() => { pct = Math.min(pct + 8, 85); pBar.style.width = pct + "%"; }, 200);
+    try {
+      const res = await api(authPayload({
+        action:"updateShipment", ID:id, Status:status,
+        photoBase64: selectedPhotoBase64, photoMime: selectedPhotoMime,
+        photoName: `${id}_${session.username}_${Date.now()}.jpg`
+      }));
+      clearInterval(pInt); pBar.style.width = "100%";
+      setTimeout(() => { document.getElementById("uploadProgress").style.display = "none"; }, 500);
+      if (res.success) {
+        toast("✅ Status updated" + (res.photoUrl ? " + Photo saved 📷" : ""), "ok");
+        closeStatusModal(); loadShipments();
+      } else throw new Error(res.message);
+    } catch(e) { clearInterval(pInt); toast("❌ " + e.message, "er"); }
+  } else {
+    try {
+      const res = await api(authPayload({ action:"updateShipment", ID:id, Status:status }));
+      if (res.success) { toast("✅ Status updated: "+status,"ok"); closeStatusModal(); loadShipments(); }
+      else throw new Error(res.message);
+    } catch(e) { toast("❌ "+e.message,"er"); }
+  }
+  btn.innerHTML = "<span>Update Status</span>"; btn.disabled = false;
+}
+
+// ── PHOTO VIEWER ──────────────────────────────────────────────
+function viewPhoto(url) {
+  const viewer = document.getElementById("photoViewer");
+  const imgEl  = document.getElementById("photoViewerImg");
+  imgEl.style.display = "block";
+  document.getElementById("photoViewerImgWrap").style.display = "flex";
+  document.getElementById("photoViewerFallback").style.display = "none";
+  document.getElementById("pvActions").style.display = "none";
+  document.getElementById("pvLoadingText").style.display = "block";
+  imgEl.src = "";
+  document.getElementById("pvOpenLink").href = url;
+  document.getElementById("pvFallbackLink").href = url;
+  imgEl.src = url;
+  viewer.classList.add("open");
+  viewer.onclick = function(e) { if (e.target === viewer) closePhotoViewer(); };
+}
+function pvImgLoaded() {
+  document.getElementById("pvLoadingText").style.display = "none";
+  document.getElementById("pvActions").style.display = "flex";
+}
+function pvImgError() {
+  document.getElementById("photoViewerImg").style.display = "none";
+  document.getElementById("photoViewerImgWrap").style.display = "none";
+  document.getElementById("photoViewerFallback").style.display = "flex";
+}
+function closePhotoViewer() {
+  document.getElementById("photoViewer").classList.remove("open");
+  document.getElementById("photoViewerImg").src = "";
+}
+
+// ── DRIVERS (admin) ────────────────────────────────────────────
+async function loadUsers() {
+  try {
+    const res = await api(authPayload({ action:"listUsers" }));
+    if(res.success) { lastUserHash = JSON.stringify(res.data); renderDrivers(res.data); }
+  } catch(e){ toast("❌ Failed to load drivers","er"); }
+}
+
+function renderDrivers(users) {
+  const el=document.getElementById("driversList");
+  if(!users.length){ el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:8px 0">No drivers added yet</div>`; return; }
+  el.innerHTML=users.map(u=>`
+    <div class="user-row">
+      <div class="urow-av">${(u.driverName||u.username).charAt(0).toUpperCase()}</div>
+      <div class="urow-info">
+        <div class="urow-name">${esc(u.driverName||u.username)}</div>
+        <div class="urow-meta">
+          @${esc(u.username)} · ${u.role==="admin"?"🔑 Admin":"🚚 Driver"}
+          ${u.mobile?` · 📞 ${esc(u.mobile)}`:""}
+          ${u.lastLogin?` · Last: ${esc(u.lastLogin)}`:""}
+        </div>
+      </div>
+      ${u.username!==session.username
+        ?`<button class="urow-del" onclick="removeDriver('${esc(u.username)}')">Remove</button>`
+        :`<span style="font-size:11px;color:var(--accent)">You</span>`}
+    </div>`).join("");
+}
+
+async function addDriver() {
+  const newUser  = document.getElementById("n-username").value.trim();
+  const password = document.getElementById("n-password").value.trim();
+  if(!newUser||!password){ toast("⚠ Username and password required","er"); return; }
+  if(password.length<6){ toast("⚠ Password min 6 characters","er"); return; }
+  const btn=document.getElementById("addUserBtn");
+  btn.innerHTML='<span class="spin"></span>'; btn.disabled=true;
+  try {
+    const res = await api(authPayload({
+      action:"addUser", newUsername:newUser, password,
+      driverName: document.getElementById("n-name").value.trim(),
+      email:      document.getElementById("n-email").value.trim(),
+      mobile:     document.getElementById("n-mobile").value.trim(),
+      role:       document.getElementById("n-role").value,
+    }));
+    if(res.success){
+      toast("✅ Driver added: "+newUser,"ok");
+      ["n-name","n-mobile","n-email","n-username","n-password"].forEach(id=>document.getElementById(id).value="");
+      loadUsers();
+    } else throw new Error(res.message);
+  } catch(e){ toast("❌ "+e.message,"er"); }
+  finally{ btn.innerHTML="<span>Add Driver</span>"; btn.disabled=false; }
+}
+
+async function removeDriver(uname) {
+  if(!confirm("Remove driver '"+uname+"'?")) return;
+  try {
+    const res = await api(authPayload({ action:"deleteUser", targetUser:uname }));
+    if(res.success){ toast("🗑 Driver removed","ok"); loadUsers(); }
+    else throw new Error(res.message);
+  } catch(e){ toast("❌ "+e.message,"er"); }
+}
+
+// ── USER MENU ──────────────────────────────────────────────────
+function showUserMenu() {
+  document.getElementById("menuName").textContent  = session.driverName||session.username;
+  document.getElementById("menuRole").textContent  = session.role==="admin"?"🔑 Administrator":"🚚 Driver";
+  document.getElementById("menuEmail").textContent = session.email||"";
+  document.getElementById("userOverlay").classList.add("open");
+}
+
+// ── HELPERS ────────────────────────────────────────────────────
+function closeOverlay(id){ document.getElementById(id).classList.remove("open"); }
+document.querySelectorAll(".overlay").forEach(o=>{
+  o.addEventListener("click",function(e){ if(e.target===this) this.classList.remove("open"); });
+});
+
+function toast(msg,type="ok"){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.className="show "+type;
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className="",3000);
+}
+
+// [FIX: robust api()] Handles network errors, non-JSON responses, and expired sessions
+async function api(payload) {
+  try {
+    // No Content-Type header — triggers CORS preflight that Apps Script cannot handle
+    const res  = await fetch(SCRIPT_URL, {
+      method:   "POST",
+      body:     JSON.stringify(payload),
+      redirect: "follow"
+    });
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      // [FIX: token expiry] Auto-logout on expired session from any call
+      if (json && json.expired && payload.action !== "login") {
+        doLogout();
+        toast("⏱ Session expired. Please sign in again.", "er");
+        throw new Error("Session expired");
+      }
+      return json;
+    } catch(parseErr) {
+      if (parseErr.message === "Session expired") throw parseErr;
+      console.error("Non-JSON from server:", text.substring(0, 300));
+      return { success:false, message:"Server error. Please try again." };
+    }
+  } catch(netErr) {
+    if (netErr.message === "Session expired") throw netErr;
+    console.error("Network error:", netErr);
+    return { success:false, message:"No connection. Check your internet." };
+  }
+}
+
+function statusClass(s){
+  const m={"Serviced":"status-serviced","Complete":"status-complete","Pending":"status-pending",
+            "In-Progress":"status-inprogress","Issue":"status-issue","Missed Service":"status-missed"};
+  return m[s]||"status-pending";
+}
+function sbClass(s){
+  const m={"Serviced":"sb-serviced","Complete":"sb-complete","Pending":"sb-pending",
+            "In-Progress":"sb-inprogress","Issue":"sb-issue","Missed Service":"sb-missed"};
+  return m[s]||"sb-pending";
+}
+function applyStatusColor(sel){
+  const green=["Serviced","Complete"], yellow=["Pending","In-Progress"], red=["Issue","Missed Service"];
+  sel.classList.remove("green","yellow","red");
+  if(green.includes(sel.value))  sel.classList.add("green");
+  else if(yellow.includes(sel.value)) sel.classList.add("yellow");
+  else if(red.includes(sel.value))    sel.classList.add("red");
+}
+function esc(str){
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════
+//  ARCHIVE MANAGEMENT
+// ══════════════════════════════════════════════════════════════
+
+let arcPreviewRowCount = 0; // rows that will be moved on confirm
+
+async function loadArchiveStats() {
+  document.getElementById("arc-count").textContent    = "…";
+  document.getElementById("arc-earliest").textContent = "…";
+  document.getElementById("arc-latest").textContent   = "…";
+
+  // Also populate the active shipments date range info card
+  updateActiveDateInfo();
+
+  try {
+    const res = await api(authPayload({ action:"getArchiveStats" }));
+    if (res.success) {
+      document.getElementById("arc-count").textContent    = res.count.toLocaleString();
+      document.getElementById("arc-earliest").textContent = res.earliest;
+      document.getElementById("arc-latest").textContent   = res.latest;
+    }
+  } catch(e) { /* non-fatal */ }
+}
+
+function updateActiveDateInfo() {
+  const el = document.getElementById("activeDateInfo");
+  if (!el) return;
+  if (!allShips.length) {
+    el.innerHTML = `<span style="color:var(--accent)">Active sheet:</span> 0 shipments loaded`;
+    return;
+  }
+  const dates = allShips.map(s => {
+    try { return new Date(s.Date).toISOString().split("T")[0]; } catch(e) { return null; }
+  }).filter(Boolean).sort();
+
+  const oldest  = dates[0]              || "—";
+  const newest  = dates[dates.length-1] || "—";
+  el.innerHTML  = `<span style="color:var(--accent)">Active sheet:</span> ${allShips.length} shipments &nbsp;·&nbsp;
+    <span style="color:var(--muted)">oldest: <strong style="color:var(--text)">${esc(oldest)}</strong>
+    &nbsp; newest: <strong style="color:var(--text)">${esc(newest)}</strong></span>`;
+}
+
+function arcPreview() {
+  const cutoff = document.getElementById("arc-cutoff").value;
+  if (!cutoff) { toast("⚠ Select a cutoff date first","er"); return; }
+
+  // Count locally from allShips (already loaded in memory)
+  const matching = allShips.filter(s => {
+    try { return new Date(s.Date).toISOString().split("T")[0] <= cutoff; } catch(e) { return false; }
+  });
+
+  arcPreviewRowCount = matching.length;
+  const pv = document.getElementById("arcPreviewCount");
+  const moveBtn = document.getElementById("arcMoveBtn");
+
+  if (!matching.length) {
+    pv.style.display = "block";
+    pv.style.background = "rgba(0,212,255,0.05)";
+    pv.style.borderColor = "rgba(0,212,255,0.2)";
+    pv.style.color = "var(--muted)";
+    pv.textContent = "No active shipments found on or before " + cutoff + ". Nothing to archive.";
+    moveBtn.disabled = true;
+    return;
+  }
+
+  // Show status breakdown
+  const byStat = {};
+  matching.forEach(s => { byStat[s.Status] = (byStat[s.Status]||0)+1; });
+  const statSummary = Object.entries(byStat)
+    .map(([s,c]) => `${s}: ${c}`).join(" · ");
+
+  pv.style.display = "block";
+  pv.style.background = "rgba(255,107,53,0.08)";
+  pv.style.borderColor = "rgba(255,107,53,0.25)";
+  pv.style.color = "var(--accent2)";
+  pv.innerHTML = `<strong>${matching.length} shipment${matching.length!==1?"s":""}</strong> will be moved to Archive
+    &nbsp;(on or before ${esc(cutoff)})<br/>
+    <span style="font-size:11px;color:var(--muted)">${esc(statSummary)}</span>`;
+
+  moveBtn.disabled = false;
+  document.getElementById("arcMoveBtnLabel").textContent = `Move ${matching.length} rows to Archive`;
+}
+
+async function arcConfirmMove() {
+  const cutoff = document.getElementById("arc-cutoff").value;
+  if (!cutoff || !arcPreviewRowCount) return;
+
+  const confirmed = confirm(
+    `Archive ${arcPreviewRowCount} shipment(s) on or before ${cutoff}?\n\n` +
+    `They will be moved to the Archive sheet and removed from the active app.\n` +
+    `This cannot be undone from the app.`
+  );
+  if (!confirmed) return;
+
+  const btn = document.getElementById("arcMoveBtn");
+  btn.innerHTML = '<span class="spin"></span>'; btn.disabled = true;
+
+  const logEl = document.getElementById("arcLog");
+  const logContent = document.getElementById("arcLogContent");
+  logEl.style.display = "block";
+  logContent.innerHTML = `<span class="blog-inf">Archiving rows on or before ${esc(cutoff)}…</span>\n`;
+
+  try {
+    const res = await api(authPayload({
+      action:      "archiveShipments",
+      cutoffDate:  cutoff
+    }));
+
+    if (res.success) {
+      logContent.innerHTML += `<span class="blog-ok">✅ ${esc(res.message)}</span>\n`;
+      toast(`🗄 ${res.moved} row${res.moved!==1?"s":""} archived`, "ok");
+
+      // Refresh everything
+      await loadShipments();
+      await loadArchiveStats();
+      updateActiveDateInfo();
+
+      // Reset preview
+      document.getElementById("arcPreviewCount").style.display = "none";
+      document.getElementById("arc-cutoff").value = "";
+      arcPreviewRowCount = 0;
+
+    } else {
+      logContent.innerHTML += `<span class="blog-er">❌ ${esc(res.message)}</span>\n`;
+      toast("❌ " + res.message, "er");
+    }
+  } catch(e) {
+    logContent.innerHTML += `<span class="blog-er">❌ Error: ${esc(e.message)}</span>\n`;
+    toast("❌ " + e.message, "er");
+  } finally {
+    btn.innerHTML = `<span id="arcMoveBtnLabel">Move to Archive</span>`;
+    btn.disabled = (arcPreviewRowCount === 0);
+  }
+}
+// ══════════════════════════════════════════════════════════════
+//  BULK UPLOAD
+// ══════════════════════════════════════════════════════════════
+
+// Required columns (case-insensitive match)
+const BULK_COLS = ["Entity","AccountName","ServiceType","Commodity","Boxes","Assigned","Date","Status"];
+
+let bulkRows = [];  // parsed rows ready to upload
+
+function bulkDrag(e, over) {
+  e.preventDefault();
+  document.getElementById("bulkDropZone").classList.toggle("drag", over);
+}
+function bulkDrop(e) {
+  e.preventDefault();
+  document.getElementById("bulkDropZone").classList.remove("drag");
+  const file = e.dataTransfer.files[0];
+  if (file) parseBulkFile(file);
+}
+function bulkFileSelected(input) {
+  if (input.files && input.files[0]) parseBulkFile(input.files[0]);
+}
+
+function parseBulkFile(file) {
+  const ext = file.name.split(".").pop().toLowerCase();
+  if (!["xlsx","xls","csv"].includes(ext)) {
+    toast("⚠ Only .xlsx, .xls or .csv files supported","er"); return;
+  }
+  document.getElementById("bulkIco").textContent = "⏳";
+  document.getElementById("bulkTxt").innerHTML = `Reading <strong>${esc(file.name)}</strong>…`;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb   = XLSX.read(data, { type:"array", cellDates:true });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      // Convert to array of objects — header row auto-detected
+      const raw  = XLSX.utils.sheet_to_json(ws, { defval:"", raw:false });
+      if (!raw.length) { toast("⚠ File appears empty","er"); bulkReset(); return; }
+
+      // Build case-insensitive column map from first row keys
+      const keyMap = {};
+      const firstKeys = Object.keys(raw[0]);
+      BULK_COLS.forEach(col => {
+        const match = firstKeys.find(k => k.trim().toLowerCase() === col.toLowerCase());
+        if (match) keyMap[col] = match;
+      });
+
+      // Validate required columns present
+      const missing = BULK_COLS.filter(c => !keyMap[c] && c !== "ServiceType" && c !== "Commodity");
+      if (missing.length) {
+        toast("⚠ Missing columns: " + missing.join(", "),"er");
+        bulkReset(); return;
+      }
+
+      // Normalise rows
+      bulkRows = raw.map((r, i) => {
+        const row = {};
+        BULK_COLS.forEach(col => {
+          row[col] = keyMap[col] ? String(r[keyMap[col]] || "").trim() : "";
+        });
+        // Normalise date to YYYY-MM-DD
+        if (row.Date) {
+          try {
+            const d = new Date(row.Date);
+            if (!isNaN(d)) row.Date = d.toISOString().split("T")[0];
+          } catch(e) {}
+        }
+        row._rowNum = i + 2; // Excel row number (1=header)
+        return row;
+      }).filter(r => r.Entity || r.AccountName); // skip fully blank rows
+
+      if (!bulkRows.length) { toast("⚠ No valid data rows found","er"); bulkReset(); return; }
+
+      document.getElementById("bulkIco").textContent = "✅";
+      document.getElementById("bulkTxt").innerHTML   = `<strong>${esc(file.name)}</strong> — ${bulkRows.length} rows ready`;
+      renderBulkPreview();
+
+    } catch(err) {
+      toast("❌ Failed to parse file: " + err.message,"er");
+      bulkReset();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderBulkPreview() {
+  const preview = document.getElementById("bulkPreview");
+  preview.style.display = "block";
+
+  // Date grouping summary
+  const byDate = {};
+  bulkRows.forEach(r => {
+    const d = r.Date || "No Date";
+    byDate[d] = (byDate[d] || 0) + 1;
+  });
+  const dates = Object.keys(byDate).sort();
+
+  // Stats line
+  document.getElementById("bulkStats").textContent =
+    `${bulkRows.length} rows · ${dates.length} date${dates.length !== 1 ? "s" : ""} · ${Object.keys(byDate).filter(d=>!d||d==="No Date").length ? "⚠ some rows missing date" : "all dates present"}`;
+
+  // Date summary pills
+  const dsEl = document.getElementById("bulkDateSummary");
+  dsEl.innerHTML = `<div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Rows per date</div>` +
+    `<div style="display:flex;flex-wrap:wrap;gap:6px;">` +
+    dates.map(d => `<span style="background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);
+      border-radius:6px;padding:3px 10px;font-size:11px;font-family:var(--mono);color:var(--accent)">
+      ${esc(d)} <span style="color:var(--muted)">${byDate[d]}</span></span>`).join("") +
+    `</div>`;
+
+  // Preview table (first 5 rows)
+  const preview5 = bulkRows.slice(0, 5);
+  const cols = BULK_COLS;
+  const headerHtml = `<tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr>`;
+  const rowsHtml = preview5.map(r =>
+    `<tr>${cols.map(c=>`<td title="${esc(r[c])}">${esc(r[c]||"—")}</td>`).join("")}</tr>`
+  ).join("");
+  document.getElementById("bulkPreviewTable").innerHTML =
+    `<table class="bulk-table"><thead>${headerHtml}</thead><tbody>${rowsHtml}</tbody></table>`;
+  if (bulkRows.length > 5) {
+    document.getElementById("bulkPreviewTable").insertAdjacentHTML("beforeend",
+      `<div style="font-size:11px;color:var(--muted);padding:6px 10px">…and ${bulkRows.length-5} more rows</div>`);
+  }
+}
+
+async function bulkUpload() {
+  if (!bulkRows.length) { toast("⚠ No rows to upload","er"); return; }
+  const btn = document.getElementById("bulkUploadBtn");
+  btn.innerHTML = '<span class="spin"></span>'; btn.disabled = true;
+
+  const logEl = document.getElementById("bulkLog");
+  logEl.style.display = "block";
+  logEl.innerHTML = `<span class="blog-inf">Starting upload of ${bulkRows.length} rows…</span>\n`;
+
+  let ok = 0, fail = 0;
+
+  // Send in batches of 10 to avoid hitting Apps Script timeout
+  const BATCH = 10;
+  for (let i = 0; i < bulkRows.length; i += BATCH) {
+    const batch = bulkRows.slice(i, i + BATCH);
+    try {
+      const res = await api(authPayload({
+        action: "bulkCreateShipments",
+        rows: batch
+      }));
+      if (res.success) {
+        ok += res.created || batch.length;
+        logEl.innerHTML += `<span class="blog-ok">✅ Rows ${i+1}–${Math.min(i+BATCH, bulkRows.length)}: ${res.created} created</span>\n`;
+      } else {
+        fail += batch.length;
+        logEl.innerHTML += `<span class="blog-er">❌ Rows ${i+1}–${Math.min(i+BATCH, bulkRows.length)}: ${esc(res.message)}</span>\n`;
+      }
+    } catch(e) {
+      fail += batch.length;
+      logEl.innerHTML += `<span class="blog-er">❌ Batch error: ${esc(e.message)}</span>\n`;
+    }
+    logEl.scrollTop = logEl.scrollHeight;
+    // Small delay between batches — be kind to Apps Script slots
+    if (i + BATCH < bulkRows.length) await new Promise(r => setTimeout(r, 600));
+  }
+
+  logEl.innerHTML += `\n<span class="${ok>0?'blog-ok':'blog-er'}">Done — ${ok} created, ${fail} failed.</span>`;
+  logEl.scrollTop = logEl.scrollHeight;
+  toast(`✅ Bulk upload complete: ${ok} rows added`, "ok");
+  btn.innerHTML = "<span>Upload All Rows</span>"; btn.disabled = false;
+  // Refresh shipments cache
+  loadShipments();
+}
+
+function bulkClear() {
+  bulkRows = [];
+  bulkReset();
+  document.getElementById("bulkPreview").style.display = "none";
+  document.getElementById("bulkLog").style.display = "none";
+  document.getElementById("bulkLog").innerHTML = "";
+}
+
+function bulkReset() {
+  document.getElementById("bulkIco").textContent = "📊";
+  document.getElementById("bulkTxt").innerHTML   = "Tap to select Excel or CSV file<br/><strong>or drag and drop here</strong>";
+  document.getElementById("bulkFileInput").value = "";
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  HISTORY — browse old entries by date range
+// ══════════════════════════════════════════════════════════════
+
+function initHistory() {
+  // Set default date range: last 30 days
+  const today = new Date();
+  const ago30 = new Date(today); ago30.setDate(ago30.getDate() - 30);
+  document.getElementById("h-to").value   = today.toISOString().split("T")[0];
+  document.getElementById("h-from").value = ago30.toISOString().split("T")[0];
+
+  // Populate entity filter from loaded shipments
+  const entities = [...new Set(allShips.map(s=>s.Entity).filter(Boolean))].sort();
+  const sel = document.getElementById("h-entity");
+  sel.innerHTML = `<option value="">All Entities</option>` +
+    entities.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join("");
+}
+
+function historyClear() {
+  document.getElementById("h-from").value = "";
+  document.getElementById("h-to").value   = "";
+  document.getElementById("h-entity").value = "";
+  document.getElementById("h-status").value = "";
+  document.getElementById("historyResults").innerHTML =
+    `<div class="empty"><div class="empty-ico">🕘</div><p>Set a date range and press Search</p></div>`;
+}
+
+async function historySearch() {
+  const from   = document.getElementById("h-from").value;
+  const to     = document.getElementById("h-to").value;
+  const entity = document.getElementById("h-entity").value;
+  const status = document.getElementById("h-status").value;
+
+  if (!from || !to) { toast("⚠ Please set both From and To dates","er"); return; }
+  if (from > to)    { toast("⚠ From date must be before To date","er"); return; }
+
+  const btn = document.getElementById("historySearchBtn");
+  btn.innerHTML = '<span class="spin"></span>'; btn.disabled = true;
+
+  try {
+    const res = await api(authPayload({
+      action: "getHistoryShipments",
+      fromDate: from,
+      toDate: to
+    }));
+
+    if (!res.success) throw new Error(res.message);
+
+    let records = res.data || [];
+
+    // Client-side filter by entity + status
+    if (entity) records = records.filter(r => r.Entity === entity);
+    if (status) records = records.filter(r => r.Status === status);
+
+    renderHistoryResults(records, from, to);
+
+  } catch(e) {
+    toast("❌ " + e.message,"er");
+    document.getElementById("historyResults").innerHTML =
+      `<div class="empty"><div class="empty-ico">⚠</div><p>${esc(e.message)}</p></div>`;
+  } finally {
+    btn.innerHTML = "<span>Search</span>"; btn.disabled = false;
+  }
+}
+
+function renderHistoryResults(records, from, to) {
+  const el = document.getElementById("historyResults");
+  if (!records.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-ico">📭</div>
+      <p>No shipments found between ${esc(from)} and ${esc(to)}</p></div>`;
+    return;
+  }
+
+  // Group by date (use Date field, fallback CreatedAt)
+  const byDate = {};
+  records.forEach(r => {
+    let d = "";
+    try {
+      const raw = r.Date || r.CreatedAt || "";
+      d = raw ? new Date(raw).toISOString().split("T")[0] : "Unknown Date";
+      if (d === "Invalid Date" || d === "NaN-NaN-NaN") d = String(raw).split("T")[0] || "Unknown Date";
+    } catch(e) { d = "Unknown Date"; }
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(r);
+  });
+
+  // Sort dates descending (most recent first)
+  const sortedDates = Object.keys(byDate).sort().reverse();
+
+  const totalCount = records.length;
+  let html = `<div style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:12px;">
+    ${totalCount} shipment${totalCount!==1?"s":""} across ${sortedDates.length} date${sortedDates.length!==1?"s":""}
+  </div>`;
+
+  sortedDates.forEach(date => {
+    const group = byDate[date];
+    const label = date === "Unknown Date" ? "Unknown Date" :
+      new Date(date + "T12:00:00").toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+
+    // Status summary for the date
+    const statusCounts = {};
+    group.forEach(r => { statusCounts[r.Status] = (statusCounts[r.Status]||0)+1; });
+    const statusPills = Object.entries(statusCounts)
+      .map(([s,c]) => `<span class="status-badge ${sbClass(s)}" style="font-size:10px;padding:2px 7px">${esc(s)} ${c}</span>`)
+      .join(" ");
+
+    html += `<div class="date-group">
+      <div class="date-group-header">
+        <span>📅 ${esc(label)}</span>
+        <span class="date-group-count">${group.length} record${group.length!==1?"s":""} &nbsp; ${statusPills}</span>
+      </div>`;
+
+    // Compact rows for history — read-only, no edit/delete buttons
+    group.forEach(r => {
+      const photoUrl = r.PhotoURL || r.photoURL || "";
+      html += `
+      <div class="ship-card ${statusClass(r.Status)}" style="margin-bottom:6px;">
+        <div class="ship-header">
+          <div>
+            <div class="ship-id">${esc(r.ID||"—")}</div>
+            <div class="ship-entity">${esc(r.Entity||"—")}</div>
+            <div class="ship-account">${esc(r.AccountName||"—")}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <span class="status-badge ${sbClass(r.Status)}">${esc(r.Status||"—")}</span>
+            ${photoUrl && photoUrl.startsWith("http")
+              ? `<span onclick="viewPhoto('${photoUrl}')" style="font-size:18px;cursor:pointer" title="View photo">📷</span>`
+              : ""}
+          </div>
+        </div>
+        <div class="ship-meta">
+          ${r.ServiceType?`<span class="chip">📋 ${esc(r.ServiceType)}</span>`:""}
+          ${r.Commodity  ?`<span class="chip orange">📦 ${esc(r.Commodity)}</span>`:""}
+          ${r.Boxes      ?`<span class="chip muted">🗃 ${esc(r.Boxes)} boxes</span>`:""}
+          ${r.Assigned   ?`<span class="chip muted">👤 ${esc(r.Assigned)}</span>`:""}
+          ${r.CreatedBy  ?`<span class="chip muted">🖊 ${esc(r.CreatedBy)}</span>`:""}
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  el.innerHTML = html;
+}
+</script>
+</body>
+</html>
